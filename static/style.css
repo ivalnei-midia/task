@@ -1,0 +1,153 @@
+/* Cores principais */
+:root {
+    --primary-color: #1f77b4;
+    --secondary-color: #2c3e50;
+    --background-color: #f8f9fa;
+    /*--sidebar-bg: #2c3e50;*/
+    --sidebar-bg: rgba(153,192,34,1);
+    --sidebar-text: rgba(20,93,80,1);
+    --text-primary: #2c504d;
+    --text-light: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+}
+
+/* Estilos gerais */
+body {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+/* Estilos do Sidebar */
+[data-testid="stSidebar"] {
+    background-color: var(--sidebar-bg);
+    padding: 1rem;
+}
+option {
+    color: var(--sidebar-text);
+}
+
+[data-testid="stSidebar"] .stMarkdown {
+    color: var(--sidebar-text);
+}
+
+[data-testid="stSidebar"] .stRadio > div {
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+}
+
+[data-testid="stSidebar"] .stRadio label {
+    color: var(--sidebar-text) !important;
+}
+
+[data-testid="stSidebar"] .stRadio [data-testid="stRadio"] {
+    color: var(--sidebar-text) !important;
+}
+
+[data-testid="stSidebar"] .stRadio [data-testid="stRadio"] label {
+    color: var(--sidebar-text) !important;
+}
+
+[data-testid="stSidebar"] .stProgress .st-bo {
+    background-color: var(--primary-color);
+}
+
+.sidebar-text {
+    color: rgba(153,192,34,0.5) !important;
+}
+
+/* Estilos dos cards de tarefa */
+.task-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.task-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.task-card.completed {
+    background-color: #f8f9fa;
+    opacity: 0.8;
+}
+
+.task-text {
+    color: var(--text-primary);
+}
+
+.task-text.completed {
+    text-decoration: line-through;
+    color: var(--text-light);
+}
+
+/* Estilos dos botões */
+.stButton > button {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stButton > button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Estilos do formulário */
+.stTextInput > div > div > input {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+}
+
+/* Estilos do título */
+h1 {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Estilos das métricas */
+[data-testid="stMetricValue"] {
+    color: var(--primary-color);
+}
+
+/* Estilos do checkbox */
+.stCheckbox > div {
+    background-color: transparent;
+}
+
+.stCheckbox > div > label {
+    display: none;
+}
+
+.stCheckbox > div > div {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .task-card {
+        margin: 0.5rem 0;
+    }
+    
+    [data-testid="stSidebar"] {
+        padding: 0.5rem;
+    }
+}
+/* Estilo para o logo no sidebar */
+[data-testid="stSidebar"] img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+}
