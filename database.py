@@ -21,9 +21,20 @@ def init_db():
         id SERIAL PRIMARY KEY,
         description TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        priority INTEGER DEFAULT 0,
+        usuario TEXT DEFAULT ''
     )
     """)
+    
+    # Verificar se as colunas já existem e adicioná-las se não existirem
+    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='tasks' AND column_name='priority'")
+    if cursor.fetchone() is None:
+        cursor.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER DEFAULT 0")
+    
+    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='tasks' AND column_name='usuario'")
+    if cursor.fetchone() is None:
+        cursor.execute("ALTER TABLE tasks ADD COLUMN usuario TEXT DEFAULT ''")
     
     conn.commit()
     cursor.close()

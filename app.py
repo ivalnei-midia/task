@@ -3,7 +3,7 @@ import database as db
 from datetime import datetime
 import time
 import os
-
+import getpass
 # Configuração da página
 st.set_page_config(
     page_title="TaskFlow | Gerenciador Moderno de Tarefas",
@@ -25,34 +25,62 @@ load_external_css()
 db.init_db()
 
 # Funções do banco de dados (mantidas como antes)
-def get_tasks(filter_status=None, filter_priority=None):
+def get_tasks(filter_status=None, filter_priority=None, filter_usuario=None):
     conn = db.get_connection()
     cursor = conn.cursor()
     
-    if filter_status is not None and filter_priority is not None:
+    if filter_status is not None and filter_priority is not None and filter_usuario is not None:
         cursor.execute("""
-            SELECT id, description, completed, created_at, priority 
+            SELECT id, description, completed, created_at, priority, usuario 
+            FROM tasks 
+            WHERE completed = %s AND priority = %s AND usuario = %s
+            ORDER BY created_at DESC
+        """, (filter_status, filter_priority, filter_usuario))
+    elif filter_status is not None and filter_priority is not None:
+        cursor.execute("""
+            SELECT id, description, completed, created_at, priority, usuario 
             FROM tasks 
             WHERE completed = %s AND priority = %s 
             ORDER BY created_at DESC
         """, (filter_status, filter_priority))
+    elif filter_status is not None and filter_usuario is not None:
+        cursor.execute("""
+            SELECT id, description, completed, created_at, priority, usuario 
+            FROM tasks 
+            WHERE completed = %s AND usuario = %s
+            ORDER BY created_at DESC
+        """, (filter_status, filter_usuario))
+    elif filter_priority is not None and filter_usuario is not None:
+        cursor.execute("""
+            SELECT id, description, completed, created_at, priority, usuario 
+            FROM tasks 
+            WHERE priority = %s AND usuario = %s
+            ORDER BY created_at DESC
+        """, (filter_priority, filter_usuario))
     elif filter_status is not None:
         cursor.execute("""
-            SELECT id, description, completed, created_at, priority 
+            SELECT id, description, completed, created_at, priority, usuario 
             FROM tasks 
             WHERE completed = %s 
             ORDER BY created_at DESC
         """, (filter_status,))
     elif filter_priority is not None:
         cursor.execute("""
-            SELECT id, description, completed, created_at, priority 
+            SELECT id, description, completed, created_at, priority, usuario 
             FROM tasks 
             WHERE priority = %s 
             ORDER BY created_at DESC
         """, (filter_priority,))
+    elif filter_usuario is not None:
+        cursor.execute("""
+            SELECT id, description, completed, created_at, priority, usuario 
+            FROM tasks 
+            WHERE usuario = %s
+            ORDER BY created_at DESC
+        """, (filter_usuario,))
     else:
         cursor.execute("""
-            SELECT id, description, completed, created_at, priority 
+            SELECT id, description, completed, created_at, priority, usuario 
             FROM tasks 
             ORDER BY created_at DESC
         """)
@@ -62,10 +90,10 @@ def get_tasks(filter_status=None, filter_priority=None):
     conn.close()
     return tasks
 
-def add_task(description, priority):
+def add_task(description, priority, usuario):
     conn = db.get_connection()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO tasks (description, priority) VALUES (%s, %s) RETURNING id", (description, priority))
+    cursor.execute("INSERT INTO tasks (description, priority, usuario) VALUES (%s, %s, %s) RETURNING id", (description, priority, usuario))
     task_id = cursor.fetchone()[0]
     conn.commit()
     cursor.close()
@@ -88,9 +116,18 @@ def delete_task(task_id):
     cursor.close()
     conn.close()
 
+
+# Obter o usuário logado do Windows
+usuario = getpass.getuser()
+data_atual = datetime.now().strftime("%d/%m/%Y")
 # Layout principal
 #st.title(st.markdown("<sidebar-text>📋 Fluxo de tarefas</sidebar-text>", unsafe_allow_html=True))
-st.markdown("<h1 style='color: rgba(153,192,34,1);'>📋 Fluxo de tarefas</h1>", unsafe_allow_html=True)
+with st.container():
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown("<h1 style='color: rgba(153,192,34,1);'>📋 Fluxo de tarefas</h1>", unsafe_allow_html=True)
+    with col2:
+        st.write(f"Bem vindo <div style='color: rgba(153,192,34,1);font-weight: bold;'>{usuario.upper()}</div>{data_atual}", unsafe_allow_html=True)
 
 # Adicionar logo usando HTML/CSS
 
@@ -111,7 +148,7 @@ with st.form("new_task_form"):
         submitted = st.form_submit_button("Adicionar", use_container_width=True)
     
     if submitted and new_task:
-        task_id = add_task(new_task, priority)
+        task_id = add_task(new_task, priority,usuario)
         st.success("Tarefa adicionada com sucesso!")
         time.sleep(0.5)
         st.rerun()
@@ -144,15 +181,25 @@ priority_filter = st.sidebar.radio(
     horizontal=True
 )
 
+# Opção para filtrar por usuário logado
+minhas_tarefas = st.sidebar.checkbox("Mostrar apenas minhas tarefas", value=False)
 
 # Converter filtros para valores apropriados
 status_value = None if filter_status == "Todas" else (True if filter_status == "Concluídas" else False)
 priority_value = None if priority_filter == "Todas" else ["Baixa", "Média", "Alta"].index(priority_filter)
 
-
+# Aplicar filtro por usuário somente se o checkbox estiver marcado
+usuario_filtro = usuario if minhas_tarefas else None
 
 # Buscar tarefas com os filtros
-tasks = get_tasks(filter_status=status_value, filter_priority=priority_value)
+tasks = get_tasks(filter_status=status_value, filter_priority=priority_value, filter_usuario=usuario_filtro)
+
+# Adicionar informação sobre o filtro de usuário
+if tasks:
+    filtro_info = f"Status: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{filter_status}</span> - Prioridade: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{priority_filter}</span>"
+    if minhas_tarefas:
+        filtro_info += f" - Usuário: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{usuario.upper()}</span>"
+    st.write(filtro_info, unsafe_allow_html=True)
 
 # Sidebar com estatísticas
 with st.sidebar:
@@ -171,16 +218,29 @@ with st.sidebar:
 # Lista de tarefas
 if tasks:
     st.subheader("Lista de Tarefas") 
-    st.write(f"Status: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{filter_status}</span> - Prioridade: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{priority_filter}</span>", unsafe_allow_html=True)
-    
+    #st.write(f"Status: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{filter_status}</span> - Prioridade: <span style='color: rgba(153,192,34,1); font-weight: bold;'>{priority_filter}</span>", unsafe_allow_html=True)
+    #st.divider()
+
     for task in tasks:
-        task_id, description, completed, created_at, priority = task  # Adicionado priority
+        task_id, description, completed, created_at, priority, usuario_task = task  # Adicionado usuario_task
         created_str = created_at.strftime("%d/%m/%Y %H:%M")
         if completed:
-            finally_str = " - Executada em: " + datetime.now().strftime("%d/%m/%Y %H:%M")
+            # Data atual para o momento da conclusão
+            completion_date = datetime.now()
+            finally_str = " - Finalizada em: " + completion_date.strftime("%d/%m/%Y %H:%M")
+            # Calcular diferença em dias
+            time_delta = completion_date - created_at
+            days_delta = time_delta.days
+            if days_delta == 0:
+                time_message = " (concluída no mesmo dia)"
+            elif days_delta == 1:
+                time_message = " (concluída em 1 dia)"
+            else:
+                time_message = f" (concluída em {days_delta} dias)"
+            finally_str += time_message
         else:
             finally_str = ""
-        
+            days_delta = ""
         with st.container():
             col1, col2, col3, col4 = st.columns([5, 0.2, 0.3, 0.3])
             with col1:
@@ -188,7 +248,7 @@ if tasks:
                 <div class="task-card {'completed' if completed else ''}" style="padding: 0.5rem;">
                     <div class="task-content" style="display: flex; flex-direction: column; gap: 0.5rem;">
                         <div class="task-text {'completed' if completed else ''}" style="font-size: 1rem;">
-                            {description} - Criada em: {created_str} {finally_str}
+                            <div style="font-weight: bold;">{description}</div> Criada em: {created_str} por {usuario_task.upper()} {finally_str}
                         </div>
                     </div>
                 </div>
